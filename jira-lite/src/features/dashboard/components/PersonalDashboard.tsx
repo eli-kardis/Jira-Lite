@@ -216,14 +216,14 @@ export function PersonalDashboard() {
             ) : (
               <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
                 {data.recentComments.map((comment) => {
-                  const issue = comment.issues as {
+                  const issue = comment.issue as {
                     id: string
                     title: string
                     project_id: string
-                    projects: { name: string; team_id: string } | null
+                    project: { name: string; team_id: string } | null
                   } | null
-                  const issueUrl = issue?.projects?.team_id
-                    ? `/teams/${issue.projects.team_id}/projects/${issue.project_id}/issues/${issue.id}`
+                  const issueUrl = issue?.project?.team_id
+                    ? `/teams/${issue.project.team_id}/projects/${issue.project_id}/issues/${issue.id}`
                     : '#'
 
                   return (
@@ -233,7 +233,7 @@ export function PersonalDashboard() {
                         <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                           <span>{issue?.title}</span>
                           <span>·</span>
-                          <span>{issue?.projects?.name}</span>
+                          <span>{issue?.project?.name}</span>
                         </div>
                       </div>
                     </Link>

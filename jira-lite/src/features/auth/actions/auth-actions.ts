@@ -151,10 +151,17 @@ export async function resetPassword(formData: FormData): Promise<ActionResult> {
 export async function signInWithGoogle(): Promise<void> {
   const supabase = await createClient()
 
+  // Vercel 배포 시 VERCEL_URL 사용, 로컬에서는 localhost
+  const getBaseUrl = () => {
+    if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL
+    if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
+    return 'http://localhost:3000'
+  }
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/callback`,
+      redirectTo: `${getBaseUrl()}/auth/callback`,
     },
   })
 

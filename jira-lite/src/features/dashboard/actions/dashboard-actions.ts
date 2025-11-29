@@ -147,23 +147,39 @@ export async function getPersonalDashboard() {
   }) || []
 
   // 최근 활동 (최근 댓글)
-  const { data: recentComments } = await supabase
+  // 디버깅 로그
+  console.log('[Dashboard Debug] Fetching recent comments for user:', user.id)
+
+  const { data: recentComments, error: commentsError } = await supabase
     .from('comments')
     .select(`
       id,
       content,
       created_at,
-      issues:issue_id (
+      issue:issues!comments_issue_id_fkey (
         id,
         title,
         project_id,
-        projects:project_id (name, team_id)
-      )
+        project:projects!issues_project_id_fkey (name, team_id)
+      ),
+      author:profiles!comments_user_id_fkey (id, name, email)
     `)
-    .eq('author_id', user.id)
+    .eq('user_id', user.id)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
-    .limit(5)
+    .limit(10)
+
+  console.log('[Dashboard Debug] Comments query result:', {
+    count: recentComments?.length ?? 0,
+    error: commentsError ? JSON.stringify(commentsError) : 'none',
+    data: recentComments?.slice(0, 2) // 처음 2개만 로그
+  })
+
+  // RLS 문제 가능성 안내
+  if (commentsError) {
+    console.error('[Dashboard Debug] Comments RLS issue? Check if SELECT policy exists on comments table.')
+    console.error('[Dashboard Debug] SQL: CREATE POLICY "Allow Select" ON comments FOR SELECT TO authenticated USING (true);')
+  }
 
   return {
     totalAssigned: myIssues?.length || 0,
