@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { StatCard } from './StatCard'
+import { DashboardCharts } from './DashboardCharts'
 import { getPersonalDashboard } from '../actions/dashboard-actions'
 import { cn } from '@/lib/utils'
 import { formatShortDate, getDaysUntil } from '@/lib/utils/date'
@@ -44,15 +45,20 @@ export function PersonalDashboard() {
 
   if (loading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
             <Skeleton key={i} className="h-28" />
           ))}
         </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Skeleton className="h-80" />
+          <Skeleton className="h-80" />
+          <Skeleton className="h-80" />
+        </div>
         <div className="grid md:grid-cols-2 gap-4">
-          <Skeleton className="h-64" />
-          <Skeleton className="h-64" />
+          <Skeleton className="h-72" />
+          <Skeleton className="h-72" />
         </div>
       </div>
     )
@@ -244,6 +250,12 @@ export function PersonalDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* 차트 섹션 */}
+      <DashboardCharts
+        statusCounts={data.statusCounts}
+        priorityCounts={data.priorityCounts}
+      />
     </div>
   )
 }

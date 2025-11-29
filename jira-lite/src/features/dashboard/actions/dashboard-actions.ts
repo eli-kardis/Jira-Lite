@@ -131,6 +131,14 @@ export async function getPersonalDashboard() {
     statusCounts[statusName] = (statusCounts[statusName] || 0) + 1
   })
 
+  // 우선순위별 카운트
+  const priorityCounts = { HIGH: 0, MEDIUM: 0, LOW: 0 }
+  myIssues?.forEach((issue) => {
+    if (issue.priority in priorityCounts) {
+      priorityCounts[issue.priority as keyof typeof priorityCounts]++
+    }
+  })
+
   // 마감일 임박/초과
   const now = new Date()
   const dueSoon = myIssues?.filter((issue) => {
@@ -185,6 +193,7 @@ export async function getPersonalDashboard() {
     totalAssigned: myIssues?.length || 0,
     myIssues: myIssues || [],
     statusCounts,
+    priorityCounts,
     dueSoon,
     overdue,
     recentComments: recentComments || [],
