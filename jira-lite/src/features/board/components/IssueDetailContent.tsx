@@ -9,7 +9,6 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Select,
   SelectContent,
@@ -365,7 +364,7 @@ export function IssueDetailContent({
           <TabsTrigger value="history">히스토리</TabsTrigger>
         </TabsList>
 
-        <ScrollArea className="flex-1 px-6">
+        <div className="flex-1 overflow-y-auto px-6">
           <TabsContent value="details" className="mt-4 pb-6">
             <form id="issue-detail-form" onSubmit={handleSave} className="space-y-4">
               <div className="space-y-2">
@@ -716,7 +715,7 @@ export function IssueDetailContent({
               </div>
             )}
           </TabsContent>
-        </ScrollArea>
+        </div>
       </Tabs>
 
       {/* 하단 고정 버튼 영역 */}

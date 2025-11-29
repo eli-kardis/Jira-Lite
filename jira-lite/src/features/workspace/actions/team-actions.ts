@@ -149,48 +149,89 @@ export async function inviteMember(teamId: string, formData: FormData): Promise<
 
   const { email } = result.data
 
-  // 이미 팀 멤버인지 확인
-  const { data: existingMember } = await supabase
-    .from('team_members')
-    .select('id, profiles(email)')
-    .eq('team_id', teamId)
-    .eq('profiles.email', email)
+  // Step 1: 이메일로 사용자 찾기
+  const { data: targetUser } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('email', email)
     .maybeSingle()
 
-  if (existingMember) {
-    return { success: false, error: '이미 팀 멤버입니다' }
+  // 가입되지 않은 사용자 -> 초대 메일 발송 로직으로 진행
+  if (!targetUser) {
+    // 기존 PENDING 초대가 있는지 확인
+    const { data: existingInvitation } = await supabase
+      .from('team_invitations')
+      .select('id')
+      .eq('team_id', teamId)
+      .eq('email', email)
+      .eq('status', 'PENDING')
+      .maybeSingle()
+
+    if (existingInvitation) {
+      // 기존 초대 만료일 갱신
+      await supabase
+        .from('team_invitations')
+        .update({
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        })
+        .eq('id', existingInvitation.id)
+    } else {
+      // 새 초대 생성
+      const { error } = await supabase
+        .from('team_invitations')
+        .insert({
+          team_id: teamId,
+          email,
+          invited_by: user.id,
+        })
+
+      if (error) {
+        return { success: false, error: '초대 발송에 실패했습니다' }
+      }
+    }
+
+    revalidatePath(`/teams/${teamId}/settings`)
+    return { success: true }
   }
 
-  // 기존 PENDING 초대가 있는지 확인
-  const { data: existingInvitation } = await supabase
-    .from('team_invitations')
-    .select('id')
+  // Step 2: 이미 가입된 사용자 -> 멤버십 확인 (user_id + team_id 둘 다 조건)
+  const { data: existingMember } = await supabase
+    .from('team_members')
+    .select('id, deleted_at')
     .eq('team_id', teamId)
-    .eq('email', email)
-    .eq('status', 'PENDING')
+    .eq('user_id', targetUser.id)
     .maybeSingle()
 
-  if (existingInvitation) {
-    // 기존 초대 만료일 갱신
-    await supabase
-      .from('team_invitations')
-      .update({
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      })
-      .eq('id', existingInvitation.id)
-  } else {
-    // 새 초대 생성
+  // Step 3: 결과 처리
+  if (existingMember) {
+    if (existingMember.deleted_at === null) {
+      return { success: false, error: '이미 팀 멤버입니다' }
+    }
+    // deleted_at이 있으면 -> 복구 (UPDATE)
     const { error } = await supabase
-      .from('team_invitations')
-      .insert({
-        team_id: teamId,
-        email,
-        invited_by: user.id,
-      })
+      .from('team_members')
+      .update({ deleted_at: null, role: 'MEMBER' })
+      .eq('id', existingMember.id)
 
     if (error) {
-      return { success: false, error: '초대 발송에 실패했습니다' }
+      return { success: false, error: '멤버 복구에 실패했습니다' }
     }
+
+    revalidatePath(`/teams/${teamId}/settings`)
+    return { success: true }
+  }
+
+  // existingMember가 없으면 -> 새 멤버로 추가 (INSERT)
+  const { error } = await supabase
+    .from('team_members')
+    .insert({
+      team_id: teamId,
+      user_id: targetUser.id,
+      role: 'MEMBER',
+    })
+
+  if (error) {
+    return { success: false, error: '멤버 추가에 실패했습니다' }
   }
 
   revalidatePath(`/teams/${teamId}/settings`)
