@@ -204,6 +204,86 @@ export async function updateIssue(issueId: string, formData: FormData): Promise<
     if (error) {
       return { success: false, error: '이슈 수정에 실패했습니다' }
     }
+
+    // 히스토리 기록
+    const historyEntries: {
+      issue_id: string
+      user_id: string
+      field_name: string
+      old_value: string | null
+      new_value: string | null
+    }[] = []
+
+    // 제목 변경
+    if (result.data.title && result.data.title !== issue.title) {
+      historyEntries.push({
+        issue_id: issueId,
+        user_id: user.id,
+        field_name: 'title',
+        old_value: issue.title,
+        new_value: result.data.title,
+      })
+    }
+
+    // 설명 변경
+    if (result.data.description !== undefined && result.data.description !== issue.description) {
+      historyEntries.push({
+        issue_id: issueId,
+        user_id: user.id,
+        field_name: 'description',
+        old_value: issue.description || null,
+        new_value: result.data.description || null,
+      })
+    }
+
+    // 상태 변경
+    if (result.data.status_id && result.data.status_id !== issue.status_id) {
+      historyEntries.push({
+        issue_id: issueId,
+        user_id: user.id,
+        field_name: 'status_id',
+        old_value: issue.status_id,
+        new_value: result.data.status_id,
+      })
+    }
+
+    // 담당자 변경
+    if (result.data.assignee_id !== undefined && result.data.assignee_id !== issue.assignee_id) {
+      historyEntries.push({
+        issue_id: issueId,
+        user_id: user.id,
+        field_name: 'assignee_id',
+        old_value: issue.assignee_id || null,
+        new_value: result.data.assignee_id || null,
+      })
+    }
+
+    // 마감일 변경
+    if (result.data.due_date !== undefined && result.data.due_date !== issue.due_date) {
+      historyEntries.push({
+        issue_id: issueId,
+        user_id: user.id,
+        field_name: 'due_date',
+        old_value: issue.due_date || null,
+        new_value: result.data.due_date || null,
+      })
+    }
+
+    // 우선순위 변경
+    if (result.data.priority && result.data.priority !== issue.priority) {
+      historyEntries.push({
+        issue_id: issueId,
+        user_id: user.id,
+        field_name: 'priority',
+        old_value: issue.priority,
+        new_value: result.data.priority,
+      })
+    }
+
+    // 히스토리 저장
+    if (historyEntries.length > 0) {
+      await supabase.from('issue_history').insert(historyEntries)
+    }
   }
 
   // 라벨 업데이트
@@ -252,6 +332,13 @@ export async function updateIssueStatus(
     return { success: false, error: '로그인이 필요합니다' }
   }
 
+  // 기존 상태 조회
+  const { data: issue } = await supabase
+    .from('issues')
+    .select('status_id')
+    .eq('id', issueId)
+    .single()
+
   const { error } = await supabase
     .from('issues')
     .update({
@@ -262,6 +349,17 @@ export async function updateIssueStatus(
 
   if (error) {
     return { success: false, error: '이슈 상태 변경에 실패했습니다' }
+  }
+
+  // 상태가 변경된 경우 히스토리 기록
+  if (issue && issue.status_id !== statusId) {
+    await supabase.from('issue_history').insert({
+      issue_id: issueId,
+      user_id: user.id,
+      field_name: 'status_id',
+      old_value: issue.status_id,
+      new_value: statusId,
+    })
   }
 
   revalidatePath('/')
