@@ -42,6 +42,18 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
     return { success: false, error: error.message }
   }
 
+  // 회원가입 성공 후 자동 로그인
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  })
+
+  if (signInError) {
+    console.error('Auto login failed:', signInError)
+    // 회원가입은 성공했지만 자동 로그인 실패 → 로그인 페이지로
+    redirect('/login')
+  }
+
   redirect('/dashboard')
 }
 
