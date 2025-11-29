@@ -47,43 +47,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ...cached, cached: true })
     }
 
+    // 디버깅 로그
+    console.log('[AI Comments Debug] ============')
+    console.log('[AI Comments Debug] Target Issue ID:', issueId)
+    console.log('[AI Comments Debug] Current user.id:', user.id)
+
     // 댓글 목록 조회
-    const { data: comments } = await supabase
+    const { data: comments, error: queryError } = await supabase
       .from('comments')
       .select(`
         content,
         created_at,
-        profiles:author_id (name)
+        user:profiles!comments_user_id_fkey (name)
       `)
       .eq('issue_id', issueId)
       .is('deleted_at', null)
       .order('created_at', { ascending: true })
 
+    console.log('[AI Comments Debug] Fetched Comments Count:', comments?.length ?? 0)
+    console.log('[AI Comments Debug] Query Error:', queryError ? JSON.stringify(queryError) : 'none')
+    console.log('[AI Comments Debug] ============')
+
     if (!comments || comments.length === 0) {
       return NextResponse.json({
-        summary: '댓글이 없습니다',
-        keyPoints: [],
-        decisions: [],
-        openQuestions: [],
-        participants: [],
-        cached: false
-      })
+        error: '요약할 댓글이 없습니다.'
+      }, { status: 400 })
     }
 
-    if (comments.length < 3) {
+    if (comments.length < 5) {
       return NextResponse.json({
-        summary: '댓글이 3개 미만이어서 요약이 필요하지 않습니다',
-        keyPoints: [],
-        decisions: [],
-        openQuestions: [],
-        participants: comments.map(c => (c.profiles as { name: string } | null)?.name || '알 수 없음'),
-        cached: false
-      })
+        error: `댓글이 5개 이상일 때만 요약할 수 있습니다. (현재 ${comments.length}개)`
+      }, { status: 400 })
     }
 
     // 프롬프트 생성
     const commentData = comments.map(c => ({
-      author: (c.profiles as { name: string } | null)?.name || '알 수 없음',
+      author: (c.user as { name: string } | null)?.name || '알 수 없음',
       content: c.content,
       created_at: new Date(c.created_at).toLocaleString('ko-KR')
     }))

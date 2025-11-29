@@ -39,31 +39,66 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ summary: cached, cached: true })
     }
 
-    // 이슈 정보 조회
-    const { data: issue } = await supabase
+    // 디버깅 로그 시작
+    console.log('[AI Summary Debug] ============')
+    console.log('[AI Summary Debug] 1. Input issueId:', issueId)
+    console.log('[AI Summary Debug] 2. issueId type:', typeof issueId)
+    console.log('[AI Summary Debug] 3. UUID format check:', /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(issueId))
+    console.log('[AI Summary Debug] 4. Current user.id:', user.id)
+
+    // 이슈 정보 조회 (comments 조인 없이 먼저 테스트)
+    const { data: issue, error: queryError } = await supabase
       .from('issues')
-      .select(`
-        id, title, description,
-        comments (
-          content,
-          profiles:author_id (name)
-        )
-      `)
+      .select('id, title, description')
       .eq('id', issueId)
       .is('deleted_at', null)
       .single()
 
+    console.log('[AI Summary Debug] 5. DB Query Result:')
+    console.log('[AI Summary Debug]    - data:', issue ? { id: issue.id, title: issue.title } : null)
+    console.log('[AI Summary Debug]    - error:', JSON.stringify(queryError, null, 2))
+
+    // 댓글은 별도 조회
+    let comments: { content: string; user: { name: string } | null }[] = []
+    if (issue) {
+      const { data: commentsData } = await supabase
+        .from('comments')
+        .select('content, user:profiles!comments_user_id_fkey (name)')
+        .eq('issue_id', issueId)
+        .is('deleted_at', null)
+
+      comments = (commentsData || []) as typeof comments
+      console.log('[AI Summary Debug]    - comments count:', comments.length)
+    }
+
     if (!issue) {
+      // soft delete 확인 (deleted_at 필터 없이 재조회)
+      const { data: rawIssue, error: rawError } = await supabase
+        .from('issues')
+        .select('id, deleted_at, project_id')
+        .eq('id', issueId)
+        .single()
+
+      console.log('[AI Summary Debug] 6. Without deleted_at filter:')
+      console.log('[AI Summary Debug]    - rawIssue:', rawIssue)
+      console.log('[AI Summary Debug]    - rawError:', rawError)
+      if (rawIssue) {
+        console.log('[AI Summary Debug]    - Soft deleted?:', rawIssue.deleted_at !== null)
+      }
+      console.log('[AI Summary Debug] ============')
+
       return NextResponse.json({ error: '이슈를 찾을 수 없습니다' }, { status: 404 })
     }
+
+    console.log('[AI Summary Debug] ============')
 
     // 프롬프트 생성
     const promptData = {
       title: issue.title,
       description: issue.description,
-      comments: (issue.comments as { content: string; profiles: { name: string } | null }[])?.map(c => ({
+      comments: comments?.map(c => ({
         content: c.content,
-        author: c.profiles?.name || '알 수 없음'
+        author: c.user?.name || '알 수 없음'
       }))
     }
     const { system, user: userPrompt } = getIssueSummaryPrompt(promptData)

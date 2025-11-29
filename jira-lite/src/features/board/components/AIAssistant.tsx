@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import {
   Sparkles,
@@ -235,7 +234,7 @@ export function AIAssistant({ issueId, projectId, hasComments }: AIAssistantProp
           )}
 
           {/* 결과 표시 영역 */}
-          <ScrollArea className="max-h-[300px]">
+          <div className="max-h-[300px] overflow-y-auto">
             {/* 요약 결과 - 스트리밍 UI */}
             {activeFeature === 'summary' && (summaryStream.streamedText || summaryStream.isStreaming) && (
               <div className="space-y-2">
@@ -400,7 +399,7 @@ export function AIAssistant({ issueId, projectId, hasComments }: AIAssistantProp
                 위 버튼을 클릭하여 AI 기능을 사용해보세요
               </p>
             )}
-          </ScrollArea>
+          </div>
         </CardContent>
       )}
     </Card>
