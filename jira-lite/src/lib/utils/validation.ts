@@ -131,7 +131,7 @@ export const createIssueSchema = z.object({
     .max(5000, '이슈 설명은 5000자 이하여야 합니다')
     .optional(),
   assignee_id: z.string().uuid().nullable().optional(),
-  due_date: z.string().datetime().nullable().optional(),
+  due_date: z.string().nullable().optional(),
   priority: z.enum(['HIGH', 'MEDIUM', 'LOW']).default('MEDIUM'),
   label_ids: z
     .array(z.string().uuid())

@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { NotificationBell } from '@/features/notifications/components/NotificationBell'
+import { TeamSwitcher } from './TeamSwitcher'
 
 export function Header() {
   const { user, loading } = useCurrentUser()
@@ -20,9 +21,12 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b bg-white dark:bg-slate-950">
       <div className="container mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/dashboard" className="font-bold text-xl">
-          Jira Lite
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/dashboard" className="font-bold text-xl">
+            Jira Lite
+          </Link>
+          {user && <TeamSwitcher />}
+        </div>
 
         <div className="flex items-center gap-2">
           {loading ? (

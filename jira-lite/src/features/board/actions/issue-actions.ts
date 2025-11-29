@@ -72,7 +72,7 @@ export async function createIssue(projectId: string, formData: FormData): Promis
 
   const result = createIssueSchema.safeParse(rawData)
   if (!result.success) {
-    return { success: false, error: result.error.errors[0].message }
+    return { success: false, error: result.error.issues[0].message }
   }
 
   // Backlog 상태 가져오기

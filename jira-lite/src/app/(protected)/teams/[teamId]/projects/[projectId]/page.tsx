@@ -9,6 +9,7 @@ import { KanbanBoard } from '@/features/board/components/KanbanBoard'
 import { IssueList } from '@/features/board/components/IssueList'
 import { FavoriteButton } from '@/features/workspace/components/FavoriteButton'
 import { ProjectDashboard } from '@/features/dashboard/components/ProjectDashboard'
+import { checkProjectAccess } from '@/lib/auth-check'
 
 interface PageProps {
   params: Promise<{ teamId: string; projectId: string }>
@@ -16,6 +17,10 @@ interface PageProps {
 
 export default async function ProjectPage({ params }: PageProps) {
   const { teamId, projectId } = await params
+
+  // 🛑 권한 검문 (통과 못하면 404)
+  await checkProjectAccess(projectId)
+
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -38,7 +43,7 @@ export default async function ProjectPage({ params }: PageProps) {
     notFound()
   }
 
-  // 팀 멤버십 확인
+  // 팀 멤버십 확인 (role 정보 필요)
   const { data: membershipData } = await supabase
     .from('team_members')
     .select('role')

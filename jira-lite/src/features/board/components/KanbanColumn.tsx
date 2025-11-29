@@ -59,7 +59,7 @@ export function KanbanColumn({ status, issues, onIssueClick, isArchived }: Kanba
       ref={setNodeRef}
       className={cn(
         'flex-shrink-0 w-72 bg-slate-100 dark:bg-slate-800 rounded-lg',
-        isOver && 'ring-2 ring-blue-500'
+        isOver && 'ring-2 ring-blue-500 ring-inset'
       )}
     >
       {/* 컬럼 헤더 */}

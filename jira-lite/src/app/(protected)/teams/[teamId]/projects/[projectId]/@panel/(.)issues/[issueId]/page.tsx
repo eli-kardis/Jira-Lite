@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import { getProjectStatuses, getProjectLabels } from '@/features/workspace/actions/project-actions'
 import { IssueDetailPanel } from '@/features/board/components/IssueDetailPanel'
+import { checkProjectAccess } from '@/lib/auth-check'
 
 interface PageProps {
   params: Promise<{ teamId: string; projectId: string; issueId: string }>
@@ -9,33 +10,22 @@ interface PageProps {
 
 export default async function InterceptedIssuePage({ params }: PageProps) {
   const { teamId, projectId, issueId } = await params
+
+  // 🛑 권한 검문 (통과 못하면 404)
+  await checkProjectAccess(projectId)
+
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    redirect('/login')
-  }
-
-  // 팀 멤버십 확인
-  const { data: membership } = await supabase
-    .from('team_members')
-    .select('role')
-    .eq('team_id', teamId)
-    .eq('user_id', user.id)
-    .single()
-
-  if (!membership) {
-    notFound()
-  }
-
   // 프로젝트 확인
-  const { data: project } = await supabase
+  const { data: projectData } = await supabase
     .from('projects')
     .select('id, archived_at')
     .eq('id', projectId)
     .eq('team_id', teamId)
     .is('deleted_at', null)
     .single()
+
+  const project = projectData as { id: string; archived_at: string | null } | null
 
   if (!project) {
     notFound()

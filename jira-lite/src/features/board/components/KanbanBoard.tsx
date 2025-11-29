@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useId } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -90,6 +90,7 @@ export function KanbanBoard({
   const queryClient = useQueryClient()
   const [activeIssue, setActiveIssue] = useState<Issue | null>(null)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const dndContextId = useId()
 
   // React Query로 이슈 관리 - 초기 데이터로 캐시 초기화
   const { data: issues = initialIssues } = useQuery({
@@ -187,6 +188,7 @@ export function KanbanBoard({
       )}
 
       <DndContext
+        id={dndContextId}
         sensors={sensors}
         collisionDetection={closestCorners}
         onDragStart={handleDragStart}

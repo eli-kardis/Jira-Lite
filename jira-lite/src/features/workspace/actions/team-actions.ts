@@ -588,3 +588,45 @@ export async function getTeamActivityLogs(teamId: string, limit = 20, offset = 0
 
   return logs
 }
+
+// 사용자가 속한 모든 팀 목록 조회
+export async function getUserTeams() {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return []
+  }
+
+  const { data: teamMemberships, error } = await supabase
+    .from('team_members')
+    .select(`
+      team_id,
+      role,
+      teams (
+        id,
+        name
+      )
+    `)
+    .eq('user_id', user.id)
+    .is('deleted_at', null)
+
+  if (error) {
+    console.error('Get user teams error:', error)
+    return []
+  }
+
+  type TeamMembershipRow = {
+    team_id: string
+    role: string
+    teams: { id: string; name: string } | null
+  }
+
+  return ((teamMemberships as TeamMembershipRow[] | null) || [])
+    .filter(tm => tm.teams !== null)
+    .map(tm => ({
+      id: tm.teams!.id,
+      name: tm.teams!.name,
+      role: tm.role as 'OWNER' | 'ADMIN' | 'MEMBER'
+    }))
+}

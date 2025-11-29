@@ -27,7 +27,7 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
 
   const { email, password, name } = result.data
 
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -42,7 +42,12 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
     return { success: false, error: error.message }
   }
 
-  // 회원가입 성공 후 자동 로그인
+  // 세션이 바로 반환되면 자동 로그인 불필요 (이메일 확인 비활성화 시)
+  if (data.session) {
+    redirect('/dashboard')
+  }
+
+  // 세션이 없으면 수동 로그인 시도
   const { error: signInError } = await supabase.auth.signInWithPassword({
     email,
     password
@@ -50,7 +55,6 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
 
   if (signInError) {
     console.error('Auto login failed:', signInError)
-    // 회원가입은 성공했지만 자동 로그인 실패 → 로그인 페이지로
     redirect('/login')
   }
 

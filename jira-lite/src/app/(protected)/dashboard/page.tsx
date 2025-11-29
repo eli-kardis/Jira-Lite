@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Plus, Users, LayoutDashboard } from 'lucide-react'
 import { PersonalDashboard } from '@/features/dashboard/components/PersonalDashboard'
+import { TeamStatisticsChart } from '@/features/dashboard/components/TeamStatisticsChart'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -71,6 +72,14 @@ export default async function DashboardPage() {
           </Button>
         </Link>
       </div>
+
+      {/* 팀 전체 통계 차트 */}
+      {teams.length > 0 && (
+        <TeamStatisticsChart
+          teamId={teams[0].id}
+          teamName={teams[0].name}
+        />
+      )}
 
       <Tabs defaultValue="overview" className="w-full">
         <TabsList>

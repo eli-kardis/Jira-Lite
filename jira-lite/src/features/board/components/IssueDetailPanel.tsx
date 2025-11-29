@@ -21,8 +21,8 @@ export function IssueDetailPanel({
   const router = useRouter()
 
   const handleClose = useCallback(() => {
-    router.push(`/teams/${teamId}/projects/${projectId}`, { scroll: false })
-  }, [router, teamId, projectId])
+    router.back()
+  }, [router])
 
   const handleDelete = useCallback(() => {
     router.push(`/teams/${teamId}/projects/${projectId}`, { scroll: false })

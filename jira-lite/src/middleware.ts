@@ -58,6 +58,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Breadcrumb용 경로 헤더 추가
+  supabaseResponse.headers.set('x-pathname', pathname)
+
   return supabaseResponse
 }
 

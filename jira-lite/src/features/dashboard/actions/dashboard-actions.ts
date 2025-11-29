@@ -116,7 +116,7 @@ export async function getPersonalDashboard() {
       priority,
       due_date,
       project_id,
-      projects:project_id (name),
+      projects:project_id (name, team_id),
       statuses:status_id (name)
     `)
     .eq('assignee_id', user.id)
@@ -157,7 +157,7 @@ export async function getPersonalDashboard() {
         id,
         title,
         project_id,
-        projects:project_id (name)
+        projects:project_id (name, team_id)
       )
     `)
     .eq('author_id', user.id)
@@ -172,6 +172,78 @@ export async function getPersonalDashboard() {
     dueSoon,
     overdue,
     recentComments: recentComments || [],
+  }
+}
+
+// 팀 통계 (상태별 이슈 집계)
+export async function getTeamStatistics(teamId: string) {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return null
+  }
+
+  // 팀 멤버십 확인
+  const { data: membership } = await supabase
+    .from('team_members')
+    .select('role')
+    .eq('team_id', teamId)
+    .eq('user_id', user.id)
+    .single()
+
+  if (!membership) return null
+
+  // 팀의 모든 프로젝트 ID 조회
+  const { data: projects } = await supabase
+    .from('projects')
+    .select('id')
+    .eq('team_id', teamId)
+    .is('deleted_at', null)
+
+  const projectIds = projects?.map(p => p.id) || []
+
+  if (projectIds.length === 0) {
+    return {
+      byStatus: [
+        { name: 'Backlog', count: 0 },
+        { name: '진행 중', count: 0 },
+        { name: '완료', count: 0 },
+      ],
+      totalIssues: 0,
+    }
+  }
+
+  // 상태 이름을 조인해서 카운트
+  const { data: allIssues } = await supabase
+    .from('issues')
+    .select(`
+      id,
+      statuses:status_id (name)
+    `)
+    .in('project_id', projectIds)
+    .is('deleted_at', null)
+
+  const statusCounts: Record<string, number> = {
+    'Backlog': 0,
+    '진행 중': 0,
+    '완료': 0,
+  }
+
+  allIssues?.forEach((issue) => {
+    const statusName = (issue.statuses as { name: string } | null)?.name
+    if (statusName && statusCounts[statusName] !== undefined) {
+      statusCounts[statusName]++
+    }
+  })
+
+  return {
+    byStatus: [
+      { name: 'Backlog', count: statusCounts['Backlog'] },
+      { name: '진행 중', count: statusCounts['진행 중'] },
+      { name: '완료', count: statusCounts['완료'] },
+    ],
+    totalIssues: allIssues?.length || 0,
   }
 }
 

@@ -43,7 +43,7 @@ import {
   getIssueHistory,
 } from '@/features/board/actions/issue-actions'
 import { toast } from 'sonner'
-import { CalendarIcon, Trash2, Plus, X, Edit2, CheckSquare, MessageSquare } from 'lucide-react'
+import { CalendarIcon, Trash2, Plus, X, Edit2, CheckSquare, MessageSquare, Loader2 } from 'lucide-react'
 import { IssueDetailSkeleton } from './IssueDetailSkeleton'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
@@ -196,6 +196,12 @@ export function IssueDetailContent({
 
     setSaving(true)
     const formData = new FormData(e.currentTarget)
+
+    // "unassigned" 값을 빈 문자열로 변환 (DB에서 null로 처리)
+    const assigneeId = formData.get('assignee_id')
+    if (assigneeId === 'unassigned') {
+      formData.set('assignee_id', '')
+    }
 
     if (dueDate) {
       formData.set('due_date', dueDate.toISOString().split('T')[0])
@@ -350,7 +356,7 @@ export function IssueDetailContent({
       </div>
 
       {/* Content */}
-      <Tabs defaultValue="details" className="flex-1 flex flex-col">
+      <Tabs defaultValue="details" className="flex-1 flex flex-col min-h-0 overflow-hidden">
         <TabsList className="grid w-full grid-cols-3 px-6 mt-4">
           <TabsTrigger value="details">상세</TabsTrigger>
           <TabsTrigger value="comments">
@@ -361,7 +367,7 @@ export function IssueDetailContent({
 
         <ScrollArea className="flex-1 px-6">
           <TabsContent value="details" className="mt-4 pb-6">
-            <form onSubmit={handleSave} className="space-y-4">
+            <form id="issue-detail-form" onSubmit={handleSave} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="title">제목</Label>
                 <Input
@@ -418,12 +424,12 @@ export function IssueDetailContent({
 
                 <div className="space-y-2">
                   <Label>담당자</Label>
-                  <Select name="assignee_id" defaultValue={issue.assignee_id || ''} disabled={isArchived}>
+                  <Select name="assignee_id" defaultValue={issue.assignee_id || 'unassigned'} disabled={isArchived}>
                     <SelectTrigger>
                       <SelectValue placeholder="담당자 없음" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">담당자 없음</SelectItem>
+                      <SelectItem value="unassigned">담당자 없음</SelectItem>
                       {teamMembers.map((member) =>
                         member.profiles ? (
                           <SelectItem key={member.user_id} value={member.user_id}>
@@ -567,37 +573,6 @@ export function IssueDetailContent({
                 )}
               </div>
 
-              {!isArchived && (
-                <div className="flex justify-between pt-4">
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button type="button" variant="destructive" size="sm">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        삭제
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>이슈를 삭제하시겠습니까?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          이 작업은 되돌릴 수 없습니다.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>취소</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-                          삭제
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-
-                  <Button type="submit" disabled={saving}>
-                    {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    저장
-                  </Button>
-                </div>
-              )}
             </form>
           </TabsContent>
 
@@ -743,6 +718,39 @@ export function IssueDetailContent({
           </TabsContent>
         </ScrollArea>
       </Tabs>
+
+      {/* 하단 고정 버튼 영역 */}
+      {!isArchived && (
+        <div className="flex justify-between px-6 py-4 border-t bg-background flex-shrink-0">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button type="button" variant="destructive" size="sm">
+                <Trash2 className="mr-2 h-4 w-4" />
+                삭제
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>이슈를 삭제하시겠습니까?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  이 작업은 되돌릴 수 없습니다.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>취소</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                  삭제
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <Button type="submit" form="issue-detail-form" disabled={saving}>
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            저장
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
