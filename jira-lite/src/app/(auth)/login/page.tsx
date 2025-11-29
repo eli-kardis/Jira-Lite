@@ -47,56 +47,9 @@ export default function LoginPage() {
         <CardDescription>계정에 로그인하세요</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <form action={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">이메일</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="name@example.com"
-              required
-              disabled={loading}
-            />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">비밀번호</Label>
-              <Link
-                href="/forgot-password"
-                className="text-sm text-blue-600 hover:underline"
-              >
-                비밀번호 찾기
-              </Link>
-            </div>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              required
-              disabled={loading}
-            />
-          </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            로그인
-          </Button>
-        </form>
-
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
-              또는
-            </span>
-          </div>
-        </div>
-
         <Button
           variant="outline"
-          className="w-full"
+          className="w-full h-12 text-base font-medium"
           onClick={handleGoogleLogin}
           disabled={googleLoading}
         >
@@ -124,12 +77,57 @@ export default function LoginPage() {
           )}
           Google로 계속하기
         </Button>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">
+              또는
+            </span>
+          </div>
+        </div>
+
+        <form action={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">이메일</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="name@example.com"
+              required
+              disabled={loading}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">비밀번호</Label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              required
+              disabled={loading}
+            />
+          </div>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            로그인
+          </Button>
+        </form>
       </CardContent>
-      <CardFooter className="flex justify-center">
+      <CardFooter className="flex flex-col items-center gap-2">
         <p className="text-sm text-muted-foreground">
           계정이 없으신가요?{' '}
           <Link href="/signup" className="text-blue-600 hover:underline">
             회원가입
+          </Link>
+        </p>
+        <p className="text-sm text-muted-foreground">
+          비밀번호를 잊으셨나요?{' '}
+          <Link href="/forgot-password" className="text-blue-600 hover:underline">
+            비밀번호 찾기
           </Link>
         </p>
       </CardFooter>
